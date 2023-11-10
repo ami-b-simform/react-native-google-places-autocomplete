@@ -151,6 +151,7 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
   };
 
   const [stateText, setStateText] = useState('');
+  const [search,setSearch] = useState(false)
   const [dataSource, setDataSource] = useState(buildRowsFromResults([]));
   const [listViewDisplayed, setListViewDisplayed] = useState(
     props.listViewDisplayed === 'auto' ? false : props.listViewDisplayed,
@@ -163,6 +164,7 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
   useEffect(() => {
     setUrl(getRequestUrl(props.requestUrl));
   }, [getRequestUrl, props.requestUrl]);
+  
 
   useEffect(() => {
     // This will load the search results after the query object ref gets changed
@@ -171,16 +173,21 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
       _abortRequests();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.query]);
+  }, [props.query,stateText]);
 
   useEffect(() => {
     // Update dataSource if props.predefinedPlaces changed
     setDataSource(buildRowsFromResults([]));
   }, [buildRowsFromResults, props.predefinedPlaces]);
 
+
   useImperativeHandle(ref, () => ({
     setAddressText: (address) => {
       setStateText(address);
+    },
+    triggerSearch: (address) => {
+      setStateText(address);
+      setSearch(true);
     },
     getAddressText: () => stateText,
     blur: () => inputRef.current.blur(),
@@ -535,6 +542,7 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
                 : responseJSON.predictions;
 
             _results = results;
+            _getFlatList()
             setDataSource(buildRowsFromResults(results, text));
             // }
           }
@@ -589,8 +597,7 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
     _onChangeText(text);
 
     const onChangeText = props?.textInputProps?.onChangeText;
-
-    if (onChangeText) {
+    if (onChangeText || search) {
       onChangeText(text);
     }
   };
@@ -787,13 +794,12 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
 
   const _getFlatList = () => {
     const keyGenerator = () => Math.random().toString(36).substr(2, 10);
-
     if (
       supportedPlatform() &&
       (stateText !== '' ||
         props.predefinedPlaces.length > 0 ||
         props.currentLocation === true) &&
-      listViewDisplayed === true
+      listViewDisplayed === true || search
     ) {
       return (
         <FlatList
@@ -888,61 +894,6 @@ export const GooglePlacesAutocomplete = forwardRef((props, ref) => {
     </View>
   );
 });
-
-GooglePlacesAutocomplete.propTypes = {
-  autoFillOnNotFound: PropTypes.bool,
-  currentLocation: PropTypes.bool,
-  currentLocationLabel: PropTypes.string,
-  debounce: PropTypes.number,
-  disableScroll: PropTypes.bool,
-  enableHighAccuracyLocation: PropTypes.bool,
-  enablePoweredByContainer: PropTypes.bool,
-  fetchDetails: PropTypes.bool,
-  filterReverseGeocodingByTypes: PropTypes.array,
-  GooglePlacesDetailsQuery: PropTypes.object,
-  GooglePlacesSearchQuery: PropTypes.object,
-  GoogleReverseGeocodingQuery: PropTypes.object,
-  inbetweenCompo: PropTypes.object,
-  isRowScrollable: PropTypes.bool,
-  keyboardShouldPersistTaps: PropTypes.oneOf(['never', 'always', 'handled']),
-  listEmptyComponent: PropTypes.element,
-  listLoaderComponent: PropTypes.element,
-  listHoverColor: PropTypes.string,
-  listUnderlayColor: PropTypes.string,
-  // Must write it this way: https://stackoverflow.com/a/54290946/7180620
-  listViewDisplayed: PropTypes.oneOfType([
-    PropTypes.bool,
-    PropTypes.oneOf(['auto']),
-  ]),
-  keepResultsAfterBlur: PropTypes.bool,
-  minLength: PropTypes.number,
-  nearbyPlacesAPI: PropTypes.string,
-  numberOfLines: PropTypes.number,
-  onFail: PropTypes.func,
-  onNotFound: PropTypes.func,
-  onPress: PropTypes.func,
-  onTimeout: PropTypes.func,
-  placeholder: PropTypes.string,
-  predefinedPlaces: PropTypes.array,
-  predefinedPlacesAlwaysVisible: PropTypes.bool,
-  preProcess: PropTypes.func,
-  query: PropTypes.object,
-  renderDescription: PropTypes.func,
-  renderHeaderComponent: PropTypes.func,
-  renderLeftButton: PropTypes.func,
-  renderRightButton: PropTypes.func,
-  renderRow: PropTypes.func,
-  requestUrl: PropTypes.shape({
-    url: PropTypes.string,
-    useOnPlatform: PropTypes.oneOf(['web', 'all']),
-    headers: PropTypes.objectOf(PropTypes.string),
-  }),
-  styles: PropTypes.object,
-  suppressDefaultStyles: PropTypes.bool,
-  textInputHide: PropTypes.bool,
-  textInputProps: PropTypes.object,
-  timeout: PropTypes.number,
-};
 
 GooglePlacesAutocomplete.defaultProps = {
   autoFillOnNotFound: false,
